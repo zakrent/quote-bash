@@ -11,9 +11,9 @@ function print_quote {
 	echo "$1"
 }
 
-function check_status {
-	status=$(echo $1 | jq '.status')
-	if [ $status != "\"success\"" ] ; then
+function check_msg_status {
+	msg_status=$(echo $1 | jq '.status')
+	if [ $msg_status != "\"success\"" ] ; then
 		echo "Connection failed / Incorrect request"
 		exit 1
 	fi
@@ -45,7 +45,7 @@ fi
 if [ $op == "daily" ] ; then
 	info_message="Quote for today: "
 	response=$($CURL_GET $API_URL/api/daily)
-	check_status "$response"
+	check_msg_status "$response"
 	save_id "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "next" ] ; then 
@@ -53,7 +53,7 @@ elif [ $op == "next" ] ; then
 	info_message="Next quote: "
 	prev_id=$(cat /tmp/last_quote_id)
 	response=$($CURL_GET $API_URL/api/quote/$prev_id/next)
-	check_status "$response"
+	check_msg_status "$response"
 	save_id "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "prev" ] ; then 
@@ -61,30 +61,30 @@ elif [ $op == "prev" ] ; then
 	info_message="Previous quote: "
 	prev_id=$(cat /tmp/last_quote_id)
 	response=$($CURL_GET $API_URL/api/quote/$prev_id/prev)
-	check_status "$response"
+	check_msg_status "$response"
 	save_id "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "random" ] ; then 
 	info_message="Random quote: "
 	response=$($CURL_GET $API_URL/api/random)
-	check_status "$response"
+	check_msg_status "$response"
 	save_id "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "all" ] ; then
 	info_message="All quotes: "
 	response=$($CURL_GET $API_URL/api/quotes)
-	check_status "$response"
+	check_msg_status "$response"
 	quotes=$(echo $response | jq '.quotes[].quote')
 	print_quote "$quotes" "$info_message"
 elif [ $op == "get" ] && [ -n "$2" ] ; then
 	info_message="Quote $2: "
 	response=$($CURL_GET $API_URL/api/quote/$2)
-	check_status "$response"
+	check_msg_status "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "submit" ] && [ -n "$2" ] ; then
 	#TODO: check if works
 	response=$($CURL_POST -F "Quote=$2" -F "Date="$3"" -F "Annotation="$4"" $API_URL/api/submit)
-	check_status "$response"
+	check_msg_status "$response"
 	echo "Success!"
 else
 	echo -e "\e[1mHelp for wquote: \e[0m"
