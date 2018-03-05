@@ -91,9 +91,9 @@ else
 	echo -e "[] parameters are required () are optional\n"
 	echo -e "\twqoute daily - get daily quote"
 	echo -e "\twquote random - get random quote"
+	echo -e "\twquote next - get next quote"
+	echo -e "\twquote prev - get prev quote"
 	echo -e "\twqoute all - get all quotes"
 	echo -e "\twqoute get [id] - get quote with given ID"
 	echo -e "\twquote submit [quote] (date) (annotation) - submit a quote"
 fi
-
-
