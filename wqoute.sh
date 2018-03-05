@@ -58,7 +58,7 @@ elif [ $op == "next" ] ; then
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "prev" ] ; then 
 	check_if_last_quote_exists
-	info_message="Next quote: "
+	info_message="Previous quote: "
 	prev_id=$(cat /tmp/last_quote_id)
 	response=$($CURL_GET $API_URL/api/quote/$prev_id/prev)
 	check_status "$response"
