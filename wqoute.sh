@@ -19,6 +19,13 @@ function check_status {
 	fi
 }
 
+function check_if_last_quote_exists {
+	if [ ! -f /tmp/last_quote_id ]; then
+		echo "No prev quote"
+		exit 1
+	fi
+}
+
 function save_id {
 	id=$(echo $1 | jq '.quote.id')
 	echo $id > /tmp/last_quote_id
@@ -42,6 +49,7 @@ if [ $op == "daily" ] ; then
 	save_id "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "next" ] ; then 
+	check_if_last_quote_exists
 	info_message="Next quote: "
 	prev_id=$(cat /tmp/last_quote_id)
 	response=$($CURL_GET $API_URL/api/quote/$prev_id/next)
@@ -49,6 +57,7 @@ elif [ $op == "next" ] ; then
 	save_id "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "prev" ] ; then 
+	check_if_last_quote_exists
 	info_message="Next quote: "
 	prev_id=$(cat /tmp/last_quote_id)
 	response=$($CURL_GET $API_URL/api/quote/$prev_id/prev)
@@ -59,6 +68,7 @@ elif [ $op == "random" ] ; then
 	info_message="Random quote: "
 	response=$($CURL_GET $API_URL/api/random)
 	check_status "$response"
+	save_id "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "all" ] ; then
 	info_message="All quotes: "
