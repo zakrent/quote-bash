@@ -19,6 +19,11 @@ function check_status {
 	fi
 }
 
+function save_id {
+	id=$(echo $1 | jq '.quote.id')
+	echo $id > /tmp/last_quote_id
+}
+
 function parse_quote {
 	quote=$(echo $1 | jq '.quote.quote')
 	echo $quote
@@ -34,6 +39,21 @@ if [ $op == "daily" ] ; then
 	info_message="Quote for today: "
 	response=$($CURL_GET $API_URL/api/daily)
 	check_status "$response"
+	save_id "$response"
+	print_quote "$(parse_quote "$response")" "$info_message"
+elif [ $op == "next" ] ; then 
+	info_message="Next quote: "
+	prev_id=$(cat /tmp/last_quote_id)
+	response=$($CURL_GET $API_URL/api/quote/$prev_id/next)
+	check_status "$response"
+	save_id "$response"
+	print_quote "$(parse_quote "$response")" "$info_message"
+elif [ $op == "prev" ] ; then 
+	info_message="Next quote: "
+	prev_id=$(cat /tmp/last_quote_id)
+	response=$($CURL_GET $API_URL/api/quote/$prev_id/prev)
+	check_status "$response"
+	save_id "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "random" ] ; then 
 	info_message="Random quote: "
