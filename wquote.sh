@@ -13,26 +13,37 @@ function print_quote {
 
 function check_msg_status {
 	msg_status=$(echo $1 | jq '.status')
-	if [ $msg_status != "\"success\"" ] ; then
+	if [ $msg_status != "\"Success\"" ] ; then
 		echo "Connection failed / Incorrect request"
 		exit 1
 	fi
 }
 
-function check_if_last_quote_exists {
-	if [ ! -f /tmp/last_quote_id ]; then
-		echo "No prev quote"
+function check_if_prev_quote_exists {
+	prev=$(cat /tmp/prev_quote_id)
+	if [ -z "$prev" ] || [ "$prev" == "null" ] ; then
+		echo Prev quote is null
+		exit 1
+	fi
+}
+
+function check_if_next_quote_exists {
+	next=$(cat /tmp/next_quote_id)
+	if [ -z "$next" ] || [ "$next" == "null" ] ; then
+		echo Next quote is null
 		exit 1
 	fi
 }
 
 function save_id {
-	id=$(echo $1 | jq '.quote.id')
-	echo $id > /tmp/last_quote_id
+	prev_id=$(echo $1 | jq '.next')
+	next_id=$(echo $1 | jq '.prev')
+	echo $next_id > /tmp/next_quote_id
+	echo $prev_id > /tmp/prev_quote_id
 }
 
 function parse_quote {
-	quote=$(echo $1 | jq '.quote.quote')
+	quote=$(echo $1 | jq '.quote.text')
 	echo $quote
 }
 
@@ -44,48 +55,43 @@ fi
 
 if [ $op == "daily" ] ; then
 	info_message="Quote for today: "
-	response=$($CURL_GET $API_URL/api/daily)
+	response=$($CURL_GET $API_URL/api/daily/)
 	check_msg_status "$response"
 	save_id "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "next" ] ; then 
-	check_if_last_quote_exists
+	check_if_next_quote_exists
 	info_message="Next quote: "
-	prev_id=$(cat /tmp/last_quote_id)
-	response=$($CURL_GET $API_URL/api/quote/$prev_id/next)
+	next_id=$(cat /tmp/next_quote_id)
+	response=$($CURL_GET $API_URL/api/quotes/$next_id/)
 	check_msg_status "$response"
 	save_id "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "prev" ] ; then 
-	check_if_last_quote_exists
-	info_message="Previous quote: "
-	prev_id=$(cat /tmp/last_quote_id)
-	response=$($CURL_GET $API_URL/api/quote/$prev_id/prev)
+	check_if_prev_quote_exists
+	info_message="Prev quote: "
+	prev_id=$(cat /tmp/prev_quote_id)
+	response=$($CURL_GET $API_URL/api/quotes/$prev_id/)
 	check_msg_status "$response"
 	save_id "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "random" ] ; then 
 	info_message="Random quote: "
-	response=$($CURL_GET $API_URL/api/random)
+	response=$($CURL_GET $API_URL/api/random/)
 	check_msg_status "$response"
 	save_id "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
 elif [ $op == "all" ] ; then
 	info_message="All quotes: "
-	response=$($CURL_GET $API_URL/api/quotes)
+	response=$($CURL_GET $API_URL/api/quotes/)
 	check_msg_status "$response"
-	quotes=$(echo $response | jq '.quotes[].quote')
+	quotes=$(echo $response | jq '.quote[].text')
 	print_quote "$quotes" "$info_message"
 elif [ $op == "get" ] && [ -n "$2" ] ; then
 	info_message="Quote $2: "
-	response=$($CURL_GET $API_URL/api/quote/$2)
+	response=$($CURL_GET $API_URL/api/quotes/$2/)
 	check_msg_status "$response"
 	print_quote "$(parse_quote "$response")" "$info_message"
-elif [ $op == "submit" ] && [ -n "$2" ] ; then
-	#TODO: check if works
-	response=$($CURL_POST -F "Quote=$2" -F "Date="$3"" -F "Annotation="$4"" $API_URL/api/submit)
-	check_msg_status "$response"
-	echo "Success!"
 else
 	echo -e "\e[1mHelp for wquote: \e[0m"
 	echo -e "[] parameters are required () are optional\n"
